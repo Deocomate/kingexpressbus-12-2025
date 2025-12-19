@@ -1,0 +1,181 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+.claude/*
+plans/*
+assets/*
+dist/*
+coverage/*
+build/*
+ios/*
+android/*
+# tests/*
+__tests__/*
+__pycache__/*
+node_modules/*
+
+.opencode/*
+.claude/*
+.serena/*
+.pnpm-store/*
+.github/*
+.dart_tool/*
+.idea/*
+.husky/*
+.venv/*
+
+CLAUDE.md
+.repomixignore
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# package manager
+# package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# semantic-release
+.nyc_output
+
+# env files (can opt-in for committing if needed)
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# flutter
+.dart_tool
+build
+GoogleService-Info.plist
+
+repomix-output.xml
+.serena/cache
+plans/**/*
+!plans/templates/*
+screenshots/*
+docs/screenshots/*
+docs/journals/*
+docs/research/*
+logs.txt
+test-ck
+__pycache__
+prompt.md
+
+# Gemini CLI settings (symlink to .claude/.mcp.json)
+.gemini/settings.json
+
+/.phpunit.cache
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/vendor
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+/auth.json
+/.fleet
+/.idea
+/.nova
+/.vscode
+/.zed
+/.vscode
+/.codebase
+/public/builds
+
+# Added by CodebaseTracker
+.claude/
+_codebase/
+.github/
+/public/userfiles
+
+# Database files - should not be in production
+*.sql
+*.sqlite
+*.sqlite3
+*.db
+database/*.sql
+database/*.sqlite
+database/*.db
+/database/database.sql
+
+# Database backups
+*_backup.sql
+backup_*.sql
+
+# Seeder files - local development only
+/database/seeders/*.php
+!/database/seeders/DatabaseSeeder.php
+
+# Storage files (except public)
+/storage/app/*
+!/storage/app/.gitignore
+!/storage/app/public
+/storage/framework/cache/*
+!/storage/framework/cache/.gitignore
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitignore
+/storage/framework/testing/*
+!/storage/framework/testing/.gitignore
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
+/storage/logs/*
+!/storage/logs/.gitignore
+
+# User uploaded files
+/public/userfiles/*
+!/public/userfiles/.gitignore
+
+# Local environment files
+.env.local
+.env.*.local
+
+# Sensitive credentials
+/auth.json
+composer.phar
+
+# IDE workspace files with sensitive data
+.phpactor.json
+.phpstorm.meta.php
+_ide_helper.php
+_ide_helper_models.php
+.phpunit.result.cache
