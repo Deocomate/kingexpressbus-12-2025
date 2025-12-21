@@ -1,6 +1,5 @@
 {{-- ===== resources\views\client\routes\show.blade.php ===== --}}
-<x-client.layout :web-profile="$web_profile ?? null" :main-menu="$mainMenu ?? []"
-                 :title="$title ?? __('client.route_show.meta_title')" :description="$description ?? ''">
+<x-client.layout :web-profile="$web_profile ?? null" :main-menu="$mainMenu ?? []" :title="$title ?? __('client.route_show.meta_title')" :description="$description ?? ''">
     @php
         $heroImage = $route->banner_url ?? ($route->thumbnail_url ?? '/userfiles/files/city_imgs/ha-noi.jpg');
         $minPrice = (int) ($route->min_price ?? 0);
@@ -8,18 +7,27 @@
         $routeHighlights = [
             [
                 'icon' => 'fa-solid fa-location-dot',
+                'color' => 'from-blue-400 to-blue-600',
                 'label' => __('client.route_show.hero_origin'),
                 'value' => $route->start_province_name,
             ],
             [
                 'icon' => 'fa-solid fa-map-marker-alt',
+                'color' => 'from-emerald-400 to-emerald-600',
                 'label' => __('client.route_show.hero_destination'),
                 'value' => $route->end_province_name,
             ],
             [
                 'icon' => 'fa-solid fa-bus',
+                'color' => 'from-purple-400 to-purple-600',
                 'label' => __('client.route_show.hero_operators'),
                 'value' => __('client.route_show.hero_operator_count', ['count' => $route->company_count ?? $companyRoutes->count()]),
+            ],
+            [
+                'icon' => 'fa-solid fa-tag',
+                'color' => 'from-yellow-400 to-amber-500',
+                'label' => __('client.route_show.hero_price_label'),
+                'value' => $priceDisplay,
             ],
         ];
 
@@ -86,106 +94,399 @@
 
     @push('styles')
         <style>
-            .filters-card {
-                background-color: #ffffff;
-                border-radius: 24px;
+            /* Hero Section */
+            .route-hero {
+                background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.85) 100%),
+                    url('{{ $heroImage }}');
+                background-size: cover;
+                background-position: center;
+                min-height: 420px;
+            }
+
+            /* Highlight Cards */
+            .highlight-card {
+                background: rgba(255, 255, 255, 0.1);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 16px;
+                padding: 20px;
+                transition: all 0.3s ease;
+            }
+
+            .highlight-card:hover {
+                background: rgba(255, 255, 255, 0.15);
+                transform: translateY(-2px);
+            }
+
+            /* Filter Sidebar */
+            .filters-sidebar {
+                background: #ffffff;
+                border-radius: 20px;
                 border: 1px solid #e5e7eb;
-                padding: 24px;
-                box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+                box-shadow: 0 10px 40px -15px rgba(0, 0, 0, 0.1);
+                position: sticky;
+                top: 100px;
             }
 
-            .filter-input {
-                width: 100%;
-                border-radius: 14px;
-                border: 1px solid #bfdbfe;
-                background-color: #f8fafc;
-                padding: 10px 14px;
-                font-size: 14px;
-                transition: all 0.2s ease;
+            .filter-section {
+                padding: 20px;
+                border-bottom: 1px solid #f1f5f9;
             }
 
-            .filter-input:focus {
-                outline: none;
-                border-color: #60a5fa;
-                box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);
-                background-color: #ffffff;
+            .filter-section:last-child {
+                border-bottom: none;
+            }
+
+            .filter-title {
+                font-size: 13px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #64748b;
+                margin-bottom: 14px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
             }
 
             .filter-pill {
-                position: relative;
                 display: inline-flex;
                 align-items: center;
-                gap: 8px;
-                padding: 7px 14px;
+                gap: 6px;
+                padding: 8px 14px;
                 border-radius: 9999px;
-                border: 1px solid rgba(191, 219, 254, 0.9);
-                background-color: #f1f5f9;
-                color: #1d4ed8;
+                border: 1px solid #e2e8f0;
+                background: #f8fafc;
+                color: #475569;
                 font-size: 13px;
-                font-weight: 600;
+                font-weight: 500;
                 cursor: pointer;
                 transition: all 0.2s ease;
+            }
+
+            .filter-pill:hover {
+                border-color: #3b82f6;
+                background: #eff6ff;
+            }
+
+            .filter-pill.active,
+            .filter-pill:has(input:checked) {
+                background: #3b82f6;
+                border-color: #3b82f6;
+                color: #ffffff;
             }
 
             .filter-pill input {
                 position: absolute;
-                inset: 0;
                 opacity: 0;
-                cursor: pointer;
-            }
-
-            .filter-pill span {
                 pointer-events: none;
             }
 
-            .filter-pill input:checked + span {
-                background-color: #2563eb;
-                color: #ffffff;
-                border-radius: 9999px;
-                padding: 4px 10px;
-            }
-
-            .filter-pill:hover {
-                border-color: #60a5fa;
-            }
-
+            /* Trip Cards */
             .trip-card {
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-                background-color: #ffffff;
-                border: 1px solid #e2e8f0;
+                background: #ffffff;
+                border: 1px solid #e5e7eb;
                 border-radius: 20px;
-                padding: 18px;
-                transition: all 0.25s ease;
+                overflow: hidden;
+                transition: all 0.3s ease;
             }
 
             .trip-card:hover {
-                box-shadow: 0 20px 40px rgba(15, 23, 42, 0.1);
-                border-color: #3b82f6;
+                border-color: #fbbf24;
+                box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.12);
+                transform: translateY(-4px);
             }
 
-            .trip-card-media {
+            .trip-image-wrapper {
                 position: relative;
-                overflow: hidden;
-                border-radius: 14px;
-                border: 1px solid #e2e8f0;
-                flex-shrink: 0;
                 height: 180px;
-                width: 100%;
+                overflow: hidden;
             }
 
-            .trip-card-media img {
+            .trip-image-wrapper img {
                 width: 100%;
                 height: 100%;
                 object-fit: cover;
-                display: block;
+                transition: transform 0.5s ease;
             }
 
-            .scrollbar-thin {
-                scrollbar-width: thin;
+            .trip-card:hover .trip-image-wrapper img {
+                transform: scale(1.05);
             }
 
+            .trip-body {
+                padding: 20px;
+            }
+
+            /* Time Display */
+            .time-display {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 16px;
+                background: #f8fafc;
+                border-radius: 14px;
+                border: 1px solid #e2e8f0;
+            }
+
+            .time-block {
+                text-align: center;
+            }
+
+            .time-value {
+                font-size: 28px;
+                font-weight: 800;
+                color: #0f172a;
+                line-height: 1;
+            }
+
+            .time-label {
+                font-size: 12px;
+                color: #64748b;
+                margin-top: 4px;
+            }
+
+            .time-connector {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+            }
+
+            .time-line {
+                height: 2px;
+                width: 100%;
+                background: linear-gradient(90deg, #cbd5e1 0%, #94a3b8 50%, #cbd5e1 100%);
+                position: relative;
+            }
+
+            .time-line::before {
+                content: '';
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                width: 8px;
+                height: 8px;
+                background: #3b82f6;
+                border-radius: 50%;
+            }
+
+            .duration-badge {
+                font-size: 11px;
+                font-weight: 600;
+                color: #3b82f6;
+                background: #eff6ff;
+                padding: 4px 10px;
+                border-radius: 9999px;
+            }
+
+            /* Price Display */
+            .price-tag {
+                font-size: 24px;
+                font-weight: 800;
+                color: #059669;
+            }
+
+            .price-tag small {
+                font-size: 14px;
+                font-weight: 500;
+                color: #64748b;
+            }
+
+            /* Availability Badge */
+            .availability-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                border-radius: 9999px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+
+            .availability-badge.available {
+                background: #dcfce7;
+                color: #166534;
+            }
+
+            .availability-badge.unavailable {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+
+            /* Points Display */
+            .points-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+
+            .point-card {
+                padding: 14px;
+                border-radius: 12px;
+                border: 1px solid;
+            }
+
+            .point-card.pickup {
+                background: #eff6ff;
+                border-color: #bfdbfe;
+            }
+
+            .point-card.dropoff {
+                background: #f0fdf4;
+                border-color: #bbf7d0;
+            }
+
+            .point-title {
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-bottom: 8px;
+                display: flex;
+                align -items: center;
+                gap: 6px;
+            }
+
+            .point-card.pickup .point-title {
+                color: #1d4ed8;
+            }
+
+            .point-card.dropoff .point-title {
+                color: #15803d;
+            }
+
+            .point-item {
+                font-size: 12px;
+                color: #475569;
+                padding-left: 12px;
+                position: relative;
+                margin-bottom: 4px;
+            }
+
+            .point-item::before {
+                content: '•';
+                position: absolute;
+                left: 0;
+                color: #94a3b8;
+            }
+
+            /* Services */
+            .service-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                background: #f1f5f9;
+                border-radius: 8px;
+                font-size: 12px;
+                font-weight: 500;
+                color: #475569;
+            }
+
+            .service-chip i {
+                color: #3b82f6;
+                font-size: 10px;
+            }
+
+            /* Action Buttons */
+            .btn-book {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                padding: 14px 28px;
+                background: linear-gradient(135deg, #fbbf24, #f59e0b);
+                color: #0f172a;
+                font-weight: 700;
+                font-size: 15px;
+                border-radius: 14px;
+                transition: all 0.3s ease;
+                box-shadow: 0 8px 20px -8px rgba(251, 191, 36, 0.5);
+            }
+
+            .btn-book:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 12px 25px -8px rgba(251, 191, 36, 0.6);
+            }
+
+            .btn-details {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                padding: 14px 24px;
+                background: #f1f5f9;
+                color: #475569;
+                font-weight: 600;
+                font-size: 15px;
+                border-radius: 14px;
+                transition: all 0.3s ease;
+            }
+
+            .btn-details:hover {
+                background: #e2e8f0;
+            }
+
+            /* Gallery Thumbnails */
+            .gallery-thumbs {
+                display: flex;
+                gap: 8px;
+                overflow-x: auto;
+                padding-bottom: 8px;
+            }
+
+            .gallery-thumb {
+                width: 48px;
+                height: 48px;
+                border-radius: 10px;
+                overflow: hidden;
+                border: 2px solid transparent;
+                flex-shrink: 0;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .gallery-thumb:hover,
+            .gallery-thumb.active {
+                border-color: #3b82f6;
+            }
+
+            .gallery-thumb img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            /* Mobile Filter */
+            .mobile-filter-backdrop {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 100;
+            }
+
+            .mobile-filter-panel {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: 320px;
+                max-width: 90vw;
+                background: #ffffff;
+                z-index: 110;
+                overflow-y: auto;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .mobile-filter-panel.open {
+                transform: translateX(0);
+            }
+
+            /* Scrollbar */
             .scrollbar-thin::-webkit-scrollbar {
                 height: 4px;
             }
@@ -200,361 +501,283 @@
                 border-radius: 4px;
             }
 
-            .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-                background: #94a3b8;
-            }
+            /* Responsive */
+            @media (min-width: 1024px) {
+                .trip-card {
+                    display: grid;
+                    grid-template-columns: 240px 1fr;
+                }
 
-            .line-clamp-1 {
-                display: -webkit-box;
-                -webkit-line-clamp: 1;
-                -webkit-box-orient: vertical;
-                overflow: hidden;
-            }
-
-            .availability-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
-                padding: 4px 10px;
-                border-radius: 9999px;
-                font-size: 11px;
-                font-weight: 600;
-                white-space: nowrap;
-            }
-
-            .availability-badge--available {
-                background-color: #dcfce7;
-                color: #047857;
-            }
-
-            .availability-badge--unavailable {
-                background-color: #fee2e2;
-                color: #b91c1c;
-            }
-
-            .price-text {
-                color: #047857;
-            }
-
-            .mobile-filter-open {
-                position: fixed;
-                inset: 0;
-                background-color: #ffffff;
-                overflow-y: auto;
-                z-index: 110;
-                border-radius: 0;
-                padding: 28px 20px 32px;
-            }
-
-            #filter-backdrop {
-                position: fixed;
-                inset: 0;
-                background: rgba(15, 23, 42, 0.45);
-                z-index: 100;
-            }
-
-            .modal-gallery {
-                display: flex;
-                gap: 12px;
-                overflow-x: auto;
-                padding-bottom: 6px;
-            }
-
-            .modal-thumb {
-                border: 2px solid transparent;
-                border-radius: 14px;
-                overflow: hidden;
-                width: 82px;
-                height: 82px;
-                flex: 0 0 auto;
-                transition: border-color 0.2s ease;
-            }
-
-            .modal-thumb img {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-            }
-
-            .modal-thumb.is-active {
-                border-color: #2563eb;
+                .trip-image-wrapper {
+                    height: auto;
+                    min-height: 280px;
+                }
             }
 
             @media (max-width: 1023px) {
-                .filters-card {
-                    box-shadow: none;
-                    border-radius: 16px;
-                    padding: 18px;
+                .filters-sidebar {
+                    position: static;
                 }
             }
 
-            @media (min-width: 1024px) {
-                .trip-card {
-                    flex-direction: row;
-                    gap: 18px;
-                    padding: 20px;
+            @media (max-width: 639px) {
+                .points-grid {
+                    grid-template-columns: 1fr;
                 }
 
-                .trip-card-media {
-                    width: 220px;
-                    min-width: 220px;
-                    max-width: 220px;
-                    height: 165px;
-                }
-
-                .trip-card-body {
-                    flex: 1;
-                    min-width: 0;
+                .time-value {
+                    font-size: 24px;
                 }
             }
 
-            @media (max-width: 640px) {
-                .trip-card {
-                    padding: 16px;
-                    gap: 14px;
-                }
+            /* Modal */
+            .modal-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(4px);
+                z-index: 120;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            }
 
-                .trip-card-media {
-                    height: 160px;
-                    width: 100%;
-                }
+            .modal-content {
+                background: #ffffff;
+                border-radius: 24px;
+                width: 100%;
+                max-width: 900px;
+                max-height: 90vh;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .modal-header {
+                padding: 24px;
+                border-bottom: 1px solid #e5e7eb;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .modal-body {
+                padding: 24px;
+                overflow-y: auto;
+                flex: 1;
+            }
+
+            .modal-thumb {
+                width: 80px;
+                height: 80px;
+                border-radius: 12px;
+                overflow: hidden;
+                border: 2px solid transparent;
+                cursor: pointer;
+                transition: border-color 0.2s ease;
+            }
+
+            .modal-thumb.is-active {
+                border-color: #3b82f6;
             }
         </style>
     @endpush
-    <section class="relative bg-gray-900 text-white">
-        <div class="absolute inset-0">
-            <img src="{{ $heroImage }}" alt="{{ $route->name }}" class="h-full w-full object-cover" loading="lazy">
-            <div class="absolute inset-0 bg-slate-900/70"></div>
-        </div>
-        <div class="relative container mx-auto px-4 py-16 lg:py-24 space-y-8">
-            <div class="max-w-3xl space-y-5">
-                <span
-                    class="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-yellow-300">
-                    <i class="fa-solid fa-map-location-dot"></i>{{ __('client.route_show.hero_brand') }}
+
+    {{-- Hero Section --}}
+    <section class="route-hero flex items-end text-white">
+        <div class="container mx-auto px-4 py-16 lg:py-20">
+            <div class="max-w-4xl space-y-6">
+                <span class="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-yellow-400">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                    {{ __('client.route_show.hero_brand') }}
                 </span>
                 <h1 class="text-4xl md:text-5xl font-extrabold leading-tight">{{ $route->name }}</h1>
-                <p class="text-lg text-white/85 max-w-2xl">{{ $route->description }}</p>
+                @if($route->description)
+                    <p class="text-lg text-white/80 max-w-2xl">{{ $route->description }}</p>
+                @endif
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
                 @foreach ($routeHighlights as $highlight)
-                    <div
-                        class="rounded-2xl bg-white/10 backdrop-blur p-4 text-center sm:text-left sm:flex sm:items-center sm:gap-4">
-                        <i class="{{ $highlight['icon'] }} text-yellow-300 text-2xl"></i>
+                    <div class="highlight-card flex items-center gap-4">
+                        <div
+                            class="w-12 h-12 rounded-xl bg-gradient-to-br {{ $highlight['color'] }} flex items-center justify-center text-white flex-shrink-0">
+                            <i class="{{ $highlight['icon'] }} text-lg"></i>
+                        </div>
                         <div>
-                            <p class="font-semibold text-white">{{ $highlight['value'] }}</p>
-                            <p class="text-sm text-white/70">{{ $highlight['label'] }}</p>
+                            <p class="font-bold text-white">{{ $highlight['value'] }}</p>
+                            <p class="text-sm text-white/60">{{ $highlight['label'] }}</p>
                         </div>
                     </div>
                 @endforeach
-                <div
-                    class="rounded-2xl bg-white/10 backdrop-blur p-4 text-center sm:text-left sm:flex sm:items-center sm:gap-4">
-                    <i class="fa-solid fa-tag text-yellow-300 text-2xl"></i>
-                    <div>
-                        <div class="font-semibold">{{ __('client.route_show.hero_price_label') }}</div>
-                        <div class="text-white/80 text-sm">{{ $priceDisplay }}</div>
-                    </div>
-                </div>
             </div>
         </div>
     </section>
 
-    <div id="search-section" class="bg-gray-100 py-6">
-        <section class="container mx-auto px-4">
-            <div class="bg-white shadow-lg rounded-3xl p-4 md:p-5 border border-gray-200">
+    {{-- Search Section --}}
+    <section id="search-section" class="bg-white py-8 border-b border-gray-100">
+        <div class="container mx-auto px-4">
+            <div class="bg-gray-50 rounded-2xl p-4 md:p-6 border border-gray-200">
                 <x-client.search-bar :search-data="$searchData"
-                                     :submit-label="__('client.route_show.search_submit_label')"/>
+                    :submit-label="__('client.route_show.search_submit_label')" />
             </div>
-        </section>
-    </div>
+        </div>
+    </section>
 
     @if ($trips->isNotEmpty())
-        <section id="availabilities" class="py-16 bg-gray-50">
-            <div class="container mx-auto px-4 space-y-8">
-                <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                    <div class="space-y-2">
-                        <h2 class="text-3xl font-bold text-gray-900">{{ __('client.route_show.results_title') }}</h2>
-                        <p class="text-gray-600">{{ __('client.route_show.results_subtitle', ['filtered' => $tripStats['filtered'], 'total' => $tripStats['total'], 'date' => $departureDate]) }}</p>
+        {{-- Results Section --}}
+        <section id="availabilities" class="py-12 lg:py-16 bg-gray-50">
+            <div class="container mx-auto px-4">
+                {{-- Results Header --}}
+                <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-8">
+                    <div>
+                        <h2 class="text-2xl md:text-3xl font-bold text-gray-900">{{ __('client.route_show.results_title') }}
+                        </h2>
+                        <p class="text-gray-500 mt-1">
+                            {{ __('client.route_show.results_subtitle', ['filtered' => $tripStats['filtered'], 'total' => $tripStats['total'], 'date' => $departureDate]) }}
+                        </p>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <button data-filter-toggle
-                                class="lg:hidden inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-full font-semibold text-gray-700 hover:bg-gray-100 transition">
-                            <i class="fa-solid fa-filter"></i>
-                            <span>{{ __('client.route_show.filters.mobile_button') }}</span>
-                            @if ($hasActiveFilters)
-                                <span class="w-2.5 h-2.5 bg-blue-600 rounded-full"></span>
-                            @endif
-                        </button>
-                    </div>
+                    <button id="mobile-filter-toggle"
+                        class="lg:hidden inline-flex items-center gap-2 px-5 py-3 bg-white border border-gray-200 rounded-xl font-semibold text-gray-700 shadow-sm">
+                        <i class="fa-solid fa-filter"></i>
+                        <span>{{ __('client.route_show.filters.mobile_button') }}</span>
+                        @if ($hasActiveFilters)
+                            <span class="w-2.5 h-2.5 bg-blue-600 rounded-full"></span>
+                        @endif
+                    </button>
                 </div>
 
-                <div id="filter-backdrop" class="hidden lg:hidden"></div>
+                {{-- Mobile Filter Backdrop --}}
+                <div id="mobile-filter-backdrop" class="mobile-filter-backdrop hidden lg:hidden"></div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {{-- Filters Sidebar --}}
                     <aside class="lg:col-span-3">
-                        <div id="filter-panel"
-                             class="filters-card fixed inset-0 z-[110] transform -translate-x-full transition-transform duration-300 ease-in-out lg:static lg:transform-none lg:z-auto lg:inset-auto bg-white p-6 lg:p-0 overflow-y-auto lg:overflow-visible">
-                            <div class="flex justify-between items-center lg:hidden mb-5">
-                                <h3 class="text-xl font-bold">{{ __('client.route_show.filters.mobile_title') }}</h3>
-                                <button data-filter-close
-                                        class="text-gray-500 hover:text-gray-700 text-2xl">&times;
-                                </button>
+                        <div id="filter-panel" class="mobile-filter-panel lg:mobile-filter-panel-reset filters-sidebar">
+                            {{-- Mobile Header --}}
+                            <div class="flex justify-between items-center p-5 border-b border-gray-100 lg:hidden">
+                                <h3 class="text-lg font-bold">{{ __('client.route_show.filters.mobile_title') }}</h3>
+                                <button id="mobile-filter-close"
+                                    class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                             </div>
 
-                            <form id="filter-form" action="{{ $clearFiltersUrl }}" method="GET" class="space-y-6">
-                                <div class="space-y-5 p-5">
-                                    <div>
-                                        <h3
-                                            class="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2">
-                                            <i class="fa-solid fa-arrow-down-wide-short text-blue-500"></i>{{ __('client.route_show.filters.sort_title') }}
+                            <form id="filter-form" action="{{ $clearFiltersUrl }}" method="GET">
+                                {{-- Sort --}}
+                                <div class="filter-section">
+                                    <h3 class="filter-title">
+                                        <i class="fa-solid fa-arrow-down-wide-short text-blue-500"></i>
+                                        {{ __('client.route_show.filters.sort_title') }}
+                                    </h3>
+                                    <div class="space-y-2">
+                                        @foreach ($sortOptions as $value => $label)
+                                            <label
+                                                class="flex items-center gap-3 text-sm text-gray-600 cursor-pointer hover:text-gray-900">
+                                                <input type="radio" name="sort" value="{{ $value }}"
+                                                    @checked(($filterState['sort'] ?? 'recommended') === $value)
+                                                    class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                                                <span>{{ $label }}</span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </div>
+
+                                {{-- Price Range --}}
+                                <div class="filter-section">
+                                    <h3 class="filter-title">
+                                        <i class="fa-solid fa-money-bill-wave text-emerald-500"></i>
+                                        {{ __('client.route_show.filters.price_title') }}
+                                    </h3>
+                                    <div class="flex items-center gap-3">
+                                        <input type="number" name="price_min" value="{{ $filterState['price_min'] }}"
+                                            placeholder="{{ $priceRange['min'] ? number_format($priceRange['min']) : __('client.route_show.filters.price_from') }}"
+                                            class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                            min="0" inputmode="numeric">
+                                        <span class="text-gray-300">-</span>
+                                        <input type="number" name="price_max" value="{{ $filterState['price_max'] }}"
+                                            placeholder="{{ $priceRange['max'] ? number_format($priceRange['max']) : __('client.route_show.filters.price_to') }}"
+                                            class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                            min="0" inputmode="numeric">
+                                    </div>
+                                </div>
+
+                                {{-- Time Range --}}
+                                @if ($timeRangeOptions->isNotEmpty())
+                                    <div class="filter-section">
+                                        <h3 class="filter-title">
+                                            <i class="fa-solid fa-clock text-amber-500"></i>
+                                            {{ __('client.route_show.filters.time_range_title') }}
                                         </h3>
-                                        <div class="space-y-2">
-                                            @foreach ($sortOptions as $value => $label)
-                                                <label class="flex items-center gap-3 text-sm text-gray-700">
-                                                    <input type="radio" name="sort" value="{{ $value }}"
-                                                           @checked(($filterState['sort'] ?? 'recommended') === $value)
-                                                           class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                                                    <span>{{ $label }}</span>
+                                        <div class="flex flex-wrap gap-2">
+                                            @foreach ($timeRangeOptions as $key => $range)
+                                                <label class="filter-pill">
+                                                    <input type="checkbox" name="time_ranges[]" value="{{ $key }}"
+                                                        @checked(in_array($key, $filterState['time_ranges'] ?? []))>
+                                                    <span>{{ $range['label'] ?? $key }}</span>
                                                 </label>
                                             @endforeach
                                         </div>
                                     </div>
+                                @endif
 
-                                    <div class="pt-5 border-t border-gray-200">
-                                        <h3
-                                            class="text-sm font-semibold text-emerald-600 uppercase tracking-wide mb-3 flex items-center gap-2">
-                                            <i class="fa-solid fa-money-bill-wave text-emerald-500"></i>{{ __('client.route_show.filters.price_title') }}
+                                {{-- Services --}}
+                                @if ($availableServices->isNotEmpty())
+                                    <div class="filter-section">
+                                        <h3 class="filter-title">
+                                            <i class="fa-solid fa-star text-yellow-500"></i>
+                                            {{ __('client.route_show.filters.services_title') }}
                                         </h3>
-                                        <div class="flex items-center gap-3">
-                                            <input type="number" name="price_min"
-                                                   value="{{ $filterState['price_min'] }}"
-                                                   placeholder="{{ $priceRange['min'] ? number_format($priceRange['min']) : __('client.route_show.filters.price_from') }}"
-                                                   class="filter-input text-sm" min="0" inputmode="numeric">
-                                            <span class="text-gray-400 text-sm">-</span>
-                                            <input type="number" name="price_max"
-                                                   value="{{ $filterState['price_max'] }}"
-                                                   placeholder="{{ $priceRange['max'] ? number_format($priceRange['max']) : __('client.route_show.filters.price_to') }}"
-                                                   class="filter-input text-sm" min="0" inputmode="numeric">
+                                        <div class="flex flex-wrap gap-2">
+                                            @foreach ($availableServices as $service)
+                                                <label class="filter-pill">
+                                                    <input type="checkbox" name="services[]" value="{{ $service }}"
+                                                        @checked(in_array($service, $filterState['services'] ?? []))>
+                                                    <span>{{ $service }}</span>
+                                                </label>
+                                            @endforeach
                                         </div>
-                                        @if ($priceRange['min'] && $priceRange['max'])
-                                            <div
-                                                class="text-xs text-gray-500 mt-2">{{ __('client.route_show.filters.price_range_note') }}
-                                                {{ number_format($priceRange['min']) }}đ -
-                                                {{ number_format($priceRange['max']) }}đ
-                                            </div>
-                                        @endif
                                     </div>
+                                @endif
 
-                                    @if ($timeRangeOptions->isNotEmpty())
-                                        <div class="pt-5 border-t border-gray-200">
-                                            <h3
-                                                class="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2">
-                                                <i class="fa-solid fa-clock text-amber-500"></i>{{ __('client.route_show.filters.time_range_title') }}
-                                            </h3>
-                                            <div class="flex flex-wrap gap-2">
-                                                @foreach ($timeRangeOptions as $key => $range)
-                                                    <label class="filter-pill">
-                                                        <input type="checkbox" name="time_ranges[]"
-                                                               value="{{ $key }}" @checked(in_array($key, $filterState['time_ranges'] ?? []))>
-                                                        <span>{{ $range['label'] ?? $key }}</span>
-                                                    </label>
-                                                @endforeach
-                                            </div>
+                                {{-- Bus Types --}}
+                                @if ($busCategoryOptions->isNotEmpty())
+                                    <div class="filter-section">
+                                        <h3 class="filter-title">
+                                            <i class="fa-solid fa-van-shuttle text-purple-500"></i>
+                                            {{ __('client.route_show.filters.bus_type_title') }}
+                                        </h3>
+                                        <div class="space-y-2">
+                                            @foreach ($busCategoryOptions as $category)
+                                                <label
+                                                    class="flex items-center gap-3 text-sm text-gray-600 cursor-pointer hover:text-gray-900">
+                                                    <input type="checkbox" name="bus_categories[]" value="{{ $category }}"
+                                                        @checked(in_array($category, $filterState['bus_categories'] ?? []))
+                                                        class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                                                    <span>{{ $category }}</span>
+                                                </label>
+                                            @endforeach
                                         </div>
-                                    @endif
+                                    </div>
+                                @endif
 
-                                    @if ($availableServices->isNotEmpty())
-                                        <div class="pt-5 border-t border-gray-200">
-                                            <h3
-                                                class="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2">
-                                                <i class="fa-solid fa-star text-yellow-500"></i>{{ __('client.route_show.filters.services_title') }}
-                                            </h3>
-                                            <div class="flex flex-wrap gap-2">
-                                                @foreach ($availableServices as $service)
-                                                    <label class="filter-pill">
-                                                        <input type="checkbox" name="services[]"
-                                                               value="{{ $service }}" @checked(in_array($service, $filterState['services'] ?? []))>
-                                                        <span>{{ $service }}</span>
-                                                    </label>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    @endif
-
-                                    @if ($busCategoryOptions->isNotEmpty())
-                                        <div class="pt-5 border-t border-gray-200">
-                                            <h3
-                                                class="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2">
-                                                <i class="fa-solid fa-van-shuttle text-purple-500"></i>{{ __('client.route_show.filters.bus_type_title') }}
-                                            </h3>
-                                            <div class="space-y-2">
-                                                @foreach ($busCategoryOptions as $category)
-                                                    <label class="flex items-center gap-3 text-sm text-gray-700">
-                                                        <input type="checkbox" name="bus_categories[]"
-                                                               value="{{ $category }}"
-                                                               @checked(in_array($category, $filterState['bus_categories'] ?? []))
-                                                               class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                                                        <span>{{ $category }}</span>
-                                                    </label>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    @endif
-
-                                    @if ($pickupOptions->isNotEmpty())
-                                        <div class="pt-5 border-t border-gray-200">
-                                            <h3
-                                                class="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2">
-                                                <i class="fa-solid fa-location-dot text-rose-500"></i>{{ __('client.route_show.filters.pickup_title') }}
-                                            </h3>
-                                            <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
-                                                @foreach ($pickupOptions as $pickup)
-                                                    <label class="flex items-center gap-3 text-sm text-gray-700">
-                                                        <input type="checkbox" name="pickup_points[]"
-                                                               value="{{ $pickup }}"
-                                                               @checked(in_array($pickup, $filterState['pickup_points'] ?? []))
-                                                               class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                                                        <span class="line-clamp-2">{{ $pickup }}</span>
-                                                    </label>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    @endif
-
-                                    @if ($dropoffOptions->isNotEmpty())
-                                        <div class="pt-5 border-t border-gray-200">
-                                            <h3
-                                                class="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-2">
-                                                <i class="fa-solid fa-flag-checkered text-green-500"></i>{{ __('client.route_show.filters.dropoff_title') }}
-                                            </h3>
-                                            <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
-                                                @foreach ($dropoffOptions as $dropoff)
-                                                    <label class="flex items-center gap-3 text-sm text-gray-700">
-                                                        <input type="checkbox" name="dropoff_points[]"
-                                                               value="{{ $dropoff }}"
-                                                               @checked(in_array($dropoff, $filterState['dropoff_points'] ?? []))
-                                                               class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                                                        <span class="line-clamp-2">{{ $dropoff }}</span>
-                                                    </label>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    @endif
-                                </div>
-
-                                <div class="pt-5 border-t border-gray-200 space-y-3 p-4">
+                                {{-- Action Buttons --}}
+                                <div class="filter-section bg-gray-50 rounded-b-2xl">
                                     <button type="submit"
-                                            class="w-full inline-flex justify-center items-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition">
-                                        <i class="fa-solid fa-check"></i>{{ __('client.route_show.filters.apply_button') }}
+                                        class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-check"></i>
+                                        {{ __('client.route_show.filters.apply_button') }}
                                     </button>
                                     <a href="{{ $clearFiltersUrl }}"
-                                       class="w-full inline-flex justify-center items-center gap-2 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-100 transition">
-                                        <i class="fa-solid fa-rotate-left"></i>{{ __('client.route_show.filters.clear_button') }}
+                                        class="w-full mt-3 py-3.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                        {{ __('client.route_show.filters.clear_button') }}
                                     </a>
                                 </div>
                             </form>
                         </div>
                     </aside>
 
+                    {{-- Trip Cards --}}
                     <div class="lg:col-span-9 space-y-6">
                         @foreach ($trips as $trip)
                             @php
@@ -564,145 +787,147 @@
                                 $dropoffPoints = collect($trip->dropoff_points ?? []);
                                 $firstPickup = $pickupPoints->first();
                                 $firstDropoff = $dropoffPoints->first();
-                                $imageGallery = collect($trip->image_gallery ?? ($trip->bus_images ?? []))
-                                    ->filter()
-                                    ->values();
+                                $imageGallery = collect($trip->image_gallery ?? ($trip->bus_images ?? []))->filter()->values();
                                 if ($imageGallery->isEmpty() && $trip->bus_thumbnail) {
                                     $imageGallery = collect([$trip->bus_thumbnail]);
                                 }
-                                $primaryImage =
-                                    $trip->primary_bus_image ?? ($imageGallery->first() ?: $galleryFallback);
+                                $primaryImage = $trip->primary_bus_image ?? ($imageGallery->first() ?: $galleryFallback);
                                 $durationMinutes = $trip->duration_minutes ?? 0;
-                                $durationLabel =
-                                    $durationMinutes > 0
-                                        ? __('client.route_show.trip_card.duration_format', ['hours' => intdiv($durationMinutes, 60), 'minutes' => $durationMinutes % 60])
-                                        : __('client.route_show.trip_card.duration_format', ['hours' => (int) $tripStart->diff($tripEnd)->format('%h'), 'minutes' => (int) $tripStart->diff($tripEnd)->format('%i')]);
-                                $serviceList = collect($trip->services ?? [])
-                                    ->filter()
-                                    ->values();
+                                $durationLabel = $durationMinutes > 0
+                                    ? __('client.route_show.trip_card.duration_format', ['hours' => intdiv($durationMinutes, 60), 'minutes' => $durationMinutes % 60])
+                                    : __('client.route_show.trip_card.duration_format', ['hours' => (int) $tripStart->diff($tripEnd)->format('%h'), 'minutes' => (int) $tripStart->diff($tripEnd)->format('%i')]);
+                                $serviceList = collect($trip->services ?? [])->filter()->values();
                                 $hasSeats = ($trip->seats_available ?? 0) > 0;
                             @endphp
+
                             <article class="trip-card">
-                                {{-- Left: Bus Image --}}
-                                <div class="trip-card-media">
+                                {{-- Image --}}
+                                <div class="trip-image-wrapper">
                                     <img id="trip-image-{{ $trip->bus_route_id }}" src="{{ $primaryImage }}"
-                                         alt="{{ $trip->company_name }}" loading="lazy">
-                                    <span class="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/95 text-gray-800 text-xs font-semibold rounded-full shadow-sm backdrop-blur">
-                                        <i class="fa-solid fa-bus text-xs"></i>
-                                        {{ $trip->bus_category }}
-                                    </span>
+                                        alt="{{ $trip->company_name }}" loading="lazy">
+                                    <div class="absolute top-4 left-4">
+                                        <span
+                                            class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/95 backdrop-blur-sm rounded-full text-xs font-bold text-gray-800 shadow">
+                                            <i class="fa-solid fa-bus text-yellow-500"></i>
+                                            {{ $trip->bus_category }}
+                                        </span>
+                                    </div>
                                 </div>
 
-                                {{-- Right: Trip Information --}}
-                                <div class="trip-card-body flex-1 flex flex-col">
-                                    {{-- Header: Company Info + Price --}}
-                                    <div class="flex items-start justify-between gap-4 mb-3">
-                                        <div class="flex items-start gap-3 flex-1 min-w-0">
+                                {{-- Content --}}
+                                <div class="trip-body flex flex-col">
+                                    {{-- Header --}}
+                                    <div class="flex items-start justify-between gap-4 mb-5">
+                                        <div class="flex items-center gap-4">
                                             <img src="{{ $trip->company_thumbnail ?: '/userfiles/files/web information/logo.jpg' }}"
-                                                 alt="{{ $trip->company_name }}"
-                                                 class="h-11 w-11 rounded-full object-cover border border-gray-200 flex-shrink-0">
-                                            <div class="min-w-0 flex-1">
-                                                <h3 class="text-base font-bold text-gray-900 truncate">{{ $trip->company_name }}</h3>
-                                                <p class="text-sm text-gray-600">{{ $trip->bus_name }}</p>
+                                                alt="{{ $trip->company_name }}"
+                                                class="h-14 w-14 rounded-xl object-cover border border-gray-100 shadow-sm">
+                                            <div>
+                                                <h3 class="text-lg font-bold text-gray-900">{{ $trip->company_name }}</h3>
+                                                <p class="text-sm text-gray-500">{{ $trip->bus_name }}</p>
                                                 <p class="text-xs text-gray-400">Mã: {{ $trip->bus_route_id }}</p>
                                             </div>
                                         </div>
-                                        <div class="text-right flex-shrink-0">
+                                        <div class="text-right">
                                             @if ($trip->has_price)
-                                                <p class="text-xl font-bold price-text leading-tight">{{ number_format($trip->price_value) }}đ</p>
-                                                <span class="availability-badge {{ $trip->seats_available > 0 ? 'availability-badge--available' : 'availability-badge--unavailable' }} mt-1.5">
-                                                    <i class="fa-solid fa-circle text-[6px]"></i>
-                                                    <span>{{ $trip->seats_available > 0 ? __('client.route_show.trip_card.seats_available') : __('client.route_show.trip_card.seats_full') }}</span>
-                                                </span>
+                                                <p class="price-tag">{{ number_format($trip->price_value) }}<small>đ</small></p>
+                                                <div class="mt-2">
+                                                    <span
+                                                        class="availability-badge {{ $trip->seats_available > 0 ? 'available' : 'unavailable' }}">
+                                                        <i class="fa-solid fa-circle text-[6px]"></i>
+                                                        {{ $trip->seats_available > 0 ? __('client.route_show.trip_card.seats_available') : __('client.route_show.trip_card.seats_full') }}
+                                                    </span>
+                                                </div>
                                             @else
-                                                <p class="text-lg font-bold text-blue-600">{{ __('client.route_show.price_contact') }}</p>
+                                                <p class="text-lg font-bold text-blue-600">
+                                                    {{ __('client.route_show.price_contact') }}</p>
                                             @endif
                                         </div>
                                     </div>
 
-                                    {{-- Time & Duration --}}
-                                    <div class="grid grid-cols-3 gap-3 py-3 border-y border-gray-100">
-                                        <div>
-                                            <p class="text-2xl font-bold text-gray-900 leading-tight">{{ $tripStart->format('H:i') }}</p>
-                                            <p class="text-xs text-gray-500 mt-0.5 line-clamp-1" title="{{ $firstPickup->name ?? __('client.route_show.trip_card.pickup_point') }}">
+                                    {{-- Time Display --}}
+                                    <div class="time-display mb-5">
+                                        <div class="time-block">
+                                            <p class="time-value">{{ $tripStart->format('H:i') }}</p>
+                                            <p class="time-label truncate max-w-[100px]"
+                                                title="{{ $firstPickup->name ?? __('client.route_show.trip_card.pickup_point') }}">
                                                 {{ $firstPickup->name ?? __('client.route_show.trip_card.pickup_point') }}
                                             </p>
                                         </div>
-                                        <div class="text-center">
-                                            <p class="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{{ __('client.route_show.trip_card.duration_label') }}</p>
-                                            <p class="text-xs text-gray-700 font-semibold mt-0.5">{{ $durationLabel }}</p>
-                                            <div class="relative h-px bg-gray-300 mt-1.5">
-                                                <i class="fa-solid fa-bus-simple absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-1.5 text-gray-400 text-xs"></i>
-                                            </div>
+                                        <div class="time-connector">
+                                            <span class="duration-badge">{{ $durationLabel }}</span>
+                                            <div class="time-line"></div>
                                         </div>
-                                        <div class="text-right">
-                                            <p class="text-2xl font-bold text-gray-900 leading-tight">{{ $tripEnd->format('H:i') }}</p>
-                                            <p class="text-xs text-gray-500 mt-0.5 line-clamp-1" title="{{ $firstDropoff->name ?? __('client.route_show.trip_card.dropoff_point') }}">
+                                        <div class="time-block">
+                                            <p class="time-value">{{ $tripEnd->format('H:i') }}</p>
+                                            <p class="time-label truncate max-w-[100px]"
+                                                title="{{ $firstDropoff->name ?? __('client.route_show.trip_card.dropoff_point') }}">
                                                 {{ $firstDropoff->name ?? __('client.route_show.trip_card.dropoff_point') }}
                                             </p>
                                         </div>
                                     </div>
 
-                                    {{-- Pickup & Dropoff Points (Compact) --}}
-                                    <div class="grid grid-cols-2 gap-3 my-3">
-                                        <div class="bg-blue-50/50 rounded-lg p-2.5 border border-blue-100/50">
-                                            <h4 class="text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
-                                                <i class="fa-solid fa-location-dot text-blue-600 text-xs"></i>
+                                    {{-- Pickup & Dropoff Points --}}
+                                    <div class="points-grid mb-5">
+                                        <div class="point-card pickup">
+                                            <h4 class="point-title">
+                                                <i class="fa-solid fa-location-dot"></i>
                                                 Điểm đón
                                             </h4>
                                             @forelse ($pickupPoints->take(2) as $pickup)
-                                                <p class="text-xs text-gray-600 truncate">• {{ $pickup->name }}</p>
+                                                <p class="point-item">{{ $pickup->name }}</p>
                                             @empty
                                                 <p class="text-xs text-gray-400">Chưa cập nhật</p>
                                             @endforelse
                                             @if ($pickupPoints->count() > 2)
-                                                <p class="text-xs text-blue-600 font-medium mt-0.5">+{{ $pickupPoints->count() - 2 }} điểm khác</p>
+                                                <p class="text-xs text-blue-600 font-medium mt-1">+{{ $pickupPoints->count() - 2 }}
+                                                    điểm khác</p>
                                             @endif
                                         </div>
-                                        <div class="bg-emerald-50/50 rounded-lg p-2.5 border border-emerald-100/50">
-                                            <h4 class="text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
-                                                <i class="fa-solid fa-flag-checkered text-emerald-600 text-xs"></i>
+                                        <div class="point-card dropoff">
+                                            <h4 class="point-title">
+                                                <i class="fa-solid fa-flag-checkered"></i>
                                                 Điểm trả
                                             </h4>
                                             @forelse ($dropoffPoints->take(2) as $dropoff)
-                                                <p class="text-xs text-gray-600 truncate">• {{ $dropoff->name }}</p>
+                                                <p class="point-item">{{ $dropoff->name }}</p>
                                             @empty
                                                 <p class="text-xs text-gray-400">Chưa cập nhật</p>
                                             @endforelse
                                             @if ($dropoffPoints->count() > 2)
-                                                <p class="text-xs text-emerald-600 font-medium mt-0.5">+{{ $dropoffPoints->count() - 2 }} điểm khác</p>
+                                                <p class="text-xs text-emerald-600 font-medium mt-1">
+                                                    +{{ $dropoffPoints->count() - 2 }} điểm khác</p>
                                             @endif
                                         </div>
                                     </div>
 
-                                    {{-- Services (Compact) --}}
-                                    <div class="flex flex-wrap gap-1.5 mb-3">
+                                    {{-- Services --}}
+                                    <div class="flex flex-wrap gap-2 mb-5">
                                         @forelse ($serviceList->take(4) as $service)
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[11px] font-medium">
-                                                <i class="fa-solid fa-circle-check text-[9px]"></i>
+                                            <span class="service-chip">
+                                                <i class="fa-solid fa-check-circle"></i>
                                                 {{ $service }}
                                             </span>
                                         @empty
                                             <span class="text-xs text-gray-400">Chưa có tiện ích</span>
                                         @endforelse
                                         @if ($serviceList->count() > 4)
-                                            <span class="text-[11px] text-blue-600 font-medium">+{{ $serviceList->count() - 4 }}</span>
+                                            <span class="service-chip">+{{ $serviceList->count() - 4 }}</span>
                                         @endif
                                     </div>
 
-                                    {{-- Gallery Thumbnails (if multiple images) --}}
+                                    {{-- Gallery Thumbnails --}}
                                     @if ($imageGallery->count() > 1)
-                                        <div class="flex gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-thin">
+                                        <div class="gallery-thumbs scrollbar-thin mb-5">
                                             @foreach ($imageGallery->take(5) as $image)
-                                                <button type="button" data-image-trigger
-                                                        data-target="#trip-image-{{ $trip->bus_route_id }}"
-                                                        data-image="{{ $image }}"
-                                                        class="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-gray-200 hover:border-blue-400 transition">
-                                                    <img src="{{ $image }}" alt="Bus image" loading="lazy" class="w-full h-full object-cover">
+                                                <button type="button" class="gallery-thumb" data-image-trigger
+                                                    data-target="#trip-image-{{ $trip->bus_route_id }}" data-image="{{ $image }}">
+                                                    <img src="{{ $image }}" alt="Bus image" loading="lazy">
                                                 </button>
                                             @endforeach
                                             @if ($imageGallery->count() > 5)
-                                                <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center text-xs font-semibold text-gray-600">
+                                                <div
+                                                    class="gallery-thumb bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600">
                                                     +{{ $imageGallery->count() - 5 }}
                                                 </div>
                                             @endif
@@ -710,15 +935,16 @@
                                     @endif
 
                                     {{-- Action Buttons --}}
-                                    <div class="flex gap-2.5 mt-auto pt-2">
+                                    <div class="flex gap-3 mt-auto pt-4 border-t border-gray-100">
                                         <a href="{{ route('client.booking.create', ['bus_route_id' => $trip->bus_route_id, 'date' => $departureDate]) }}"
-                                           class="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-yellow-400 text-gray-900 rounded-xl font-semibold hover:bg-yellow-500 transition text-sm shadow-sm">
-                                            <i class="fa-solid fa-ticket text-sm"></i>Chọn chuyến
+                                            class="btn-book flex-1">
+                                            <i class="fa-solid fa-ticket"></i>
+                                            Chọn chuyến
                                         </a>
-                                        <button type="button"
-                                                class="inline-flex justify-center items-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition text-sm view-trip-details-btn"
-                                                data-trip='{{ json_encode($trip) }}'>
-                                            <i class="fa-solid fa-circle-info text-sm"></i>Xem chi tiết
+                                        <button type="button" class="btn-details view-trip-details-btn"
+                                            data-trip='{{ json_encode($trip) }}'>
+                                            <i class="fa-solid fa-circle-info"></i>
+                                            Chi tiết
                                         </button>
                                     </div>
                                 </div>
@@ -729,41 +955,48 @@
             </div>
         </section>
     @else
-        <section class="py-16 bg-gray-50 text-center">
-            <div class="container mx-auto px-4 space-y-4">
-                <i class="fa-solid fa-calendar-times text-5xl text-gray-400"></i>
-                <h2 class="text-2xl font-bold text-gray-800">{{ __('client.route_show.no_trips.title') }}</h2>
-                <p class="text-gray-600">{{ __('client.route_show.no_trips.description') }}
-                </p>
-                <div class="flex justify-center gap-3">
+        {{-- No Results --}}
+        <section class="py-20 bg-gray-50">
+            <div class="container mx-auto px-4 text-center max-w-lg">
+                <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-gray-100 flex items-center justify-center">
+                    <i class="fa-solid fa-calendar-xmark text-4xl text-gray-400"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-3">{{ __('client.route_show.no_trips.title') }}</h2>
+                <p class="text-gray-500 mb-8">{{ __('client.route_show.no_trips.description') }}</p>
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
                     <a href="#search-section"
-                       class="inline-flex items-center gap-2 px-4 py-2 border border-blue-600 text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition">
+                        class="inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-blue-600 text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition">
                         <i class="fa-solid fa-magnifying-glass"></i>
-                        <span>{{ __('client.route_show.no_trips.research_button') }}</span>
+                        {{ __('client.route_show.no_trips.research_button') }}
                     </a>
                     @if ($hasActiveFilters ?? false)
                         <a href="{{ $clearFiltersUrl }}"
-                           class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 transition">
+                            class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition">
                             <i class="fa-solid fa-xmark"></i>
-                            <span>{{ __('client.route_show.no_trips.clear_filters_button') }}</span>
+                            {{ __('client.route_show.no_trips.clear_filters_button') }}
                         </a>
                     @endif
                 </div>
             </div>
         </section>
     @endif
+
+    {{-- Travel Tips --}}
     @if (!empty($travelTips))
         <section id="travel-tips" class="py-16 bg-white">
-            <div class="container mx-auto px-4 space-y-8">
-                <div class="flex items-center gap-3">
-                    <i class="fa-solid fa-lightbulb text-yellow-500 text-3xl"></i>
-                    <h2 class="text-3xl font-bold text-gray-900">{{ __('client.route_show.tips.title') }}</h2>
+            <div class="container mx-auto px-4">
+                <div class="flex items-center gap-4 mb-10">
+                    <div class="w-12 h-12 rounded-xl bg-yellow-100 flex items-center justify-center">
+                        <i class="fa-solid fa-lightbulb text-yellow-500 text-xl"></i>
+                    </div>
+                    <h2 class="text-2xl md:text-3xl font-bold text-gray-900">{{ __('client.route_show.tips.title') }}</h2>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     @foreach ($travelTips as $tip)
-                        <article class="bg-gray-50 border border-gray-100 rounded-2xl p-6">
-                            <h3 class="text-xl font-semibold text-gray-900">{{ $tip['title'] }}</h3>
-                            <p class="mt-3 text-base text-gray-600 leading-relaxed">{{ $tip['content'] }}</p>
+                        <article
+                            class="bg-gray-50 border border-gray-100 rounded-2xl p-6 hover:border-yellow-200 hover:bg-yellow-50/30 transition">
+                            <h3 class="text-lg font-bold text-gray-900 mb-3">{{ $tip['title'] }}</h3>
+                            <p class="text-gray-600 leading-relaxed">{{ $tip['content'] }}</p>
                         </article>
                     @endforeach
                 </div>
@@ -771,140 +1004,110 @@
         </section>
     @endif
 
-    <div id="trip-details-modal"
-         class="hidden fixed inset-0 bg-black bg-opacity-60 z-[120] flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[92vh] flex flex-col">
-            <div class="flex justify-between items-center p-5 border-b">
+    {{-- Trip Details Modal --}}
+    <div id="trip-details-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
                 <h3 class="text-xl font-bold text-gray-900">{{ __('client.route_show.details_modal.title') }}</h3>
-                <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                <button id="close-modal-btn"
+                    class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
             </div>
-            <div class="p-6 overflow-y-auto space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="modal-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
-                        <h4 class="font-semibold text-gray-800 mb-3">{{ __('client.route_show.details_modal.bus_info_title') }}</h4>
+                        <h4 class="font-bold text-gray-800 mb-4">
+                            {{ __('client.route_show.details_modal.bus_info_title') }}</h4>
                         <img id="modal-bus-image" src="" alt="{{__('client.route_show.details_modal.bus_image_alt')}}"
-                             class="w-full h-48 object-cover rounded-lg mb-4">
-                        <div id="modal-gallery" class="modal-gallery"></div>
-                        <ul class="space-y-2 text-base mt-4">
-                            <li><strong>{{ __('client.route_show.details_modal.company') }}</strong> <span
-                                    id="modal-company-name"></span></li>
-                            <li><strong>{{ __('client.route_show.details_modal.bus_type') }}</strong> <span
-                                    id="modal-bus-category"></span></li>
-                            <li><strong>{{ __('client.route_show.details_modal.bus_details') }}</strong> <span
-                                    id="modal-bus-name"></span> (<span
-                                    id="modal-bus-model"></span>)
-                            </li>
+                            class="w-full h-52 object-cover rounded-xl mb-4 bg-gray-100">
+                        <div id="modal-gallery" class="flex gap-3 overflow-x-auto pb-2 scrollbar-thin"></div>
+                        <ul class="space-y-3 text-sm mt-5">
+                            <li class="flex gap-2"><span
+                                    class="font-semibold text-gray-700 w-20">{{ __('client.route_show.details_modal.company') }}</span><span
+                                    id="modal-company-name" class="text-gray-600"></span></li>
+                            <li class="flex gap-2"><span
+                                    class="font-semibold text-gray-700 w-20">{{ __('client.route_show.details_modal.bus_type') }}</span><span
+                                    id="modal-bus-category" class="text-gray-600"></span></li>
+                            <li class="flex gap-2"><span
+                                    class="font-semibold text-gray-700 w-20">{{ __('client.route_show.details_modal.bus_details') }}</span><span
+                                    id="modal-bus-name" class="text-gray-600"></span> (<span id="modal-bus-model"
+                                    class="text-gray-600"></span>)</li>
                         </ul>
-                        <h4 class="font-semibold text-gray-800 mt-4 mb-2">{{ __('client.route_show.details_modal.services_title') }}</h4>
+                        <h4 class="font-bold text-gray-800 mt-6 mb-3">
+                            {{ __('client.route_show.details_modal.services_title') }}</h4>
                         <div id="modal-services" class="flex flex-wrap gap-2"></div>
                     </div>
-                    <div class="space-y-4">
-                        <h4 class="font-semibold text-gray-800">{{ __('client.route_show.details_modal.seat_map_title') }}</h4>
-                        <div id="seat-map-container" class="space-y-4">
-                            <div class="flex flex-wrap gap-4 mb-4 text-sm">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-5 h-5 rounded bg-white border border-gray-300"></div>
-                                    <span>{{ __('client.route_show.details_modal.seat_available') }}</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <div
-                                        class="w-5 h-5 rounded bg-gray-400 text-white flex items-center justify-center">
-                                        <i class="fa-solid fa-lock text-xs"></i>
-                                    </div>
-                                    <span>{{ __('client.route_show.details_modal.seat_booked') }}</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <div class="w-5 h-5 rounded bg-blue-500 border border-blue-600"></div>
-                                    <span>{{ __('client.route_show.details_modal.seat_selected') }}</span>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-4 gap-2">
-                            </div>
-                        </div>
-                        <h4 class="font-semibold text-gray-800">{{ __('client.route_show.details_modal.stops_info_title') }}</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                                <h5 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">{{ __('client.route_show.details_modal.pickup_points_title') }}</h5>
-                                <ul id="modal-pickup-points" class="space-y-1 text-sm text-gray-600"></ul>
-                            </div>
-                            <div>
-                                <h5 class="text-sm font-semibold text-gray-600 uppercase tracking-wide">{{ __('client.route_show.details_modal.dropoff_points_title') }}</h5>
-                                <ul id="modal-dropoff-points" class="space-y-1 text-sm text-gray-600"></ul>
-                            </div>
-                        </div>
+                    <div class="space-y-6">
                         <div>
-                            <p class="text-sm text-gray-500">{{ __('client.route_show.details_modal.status') }} <span
-                                    id="modal-availability"
-                                    class="font-semibold text-emerald-600"></span>
+                            <h4 class="font-bold text-gray-800 mb-4">
+                                {{ __('client.route_show.details_modal.stops_info_title') }}</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="point-card pickup">
+                                    <h5 class="point-title">
+                                        {{ __('client.route_show.details_modal.pickup_points_title') }}</h5>
+                                    <ul id="modal-pickup-points" class="space-y-1"></ul>
+                                </div>
+                                <div class="point-card dropoff">
+                                    <h5 class="point-title">
+                                        {{ __('client.route_show.details_modal.dropoff_points_title') }}</h5>
+                                    <ul id="modal-dropoff-points" class="space-y-1"></ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <p class="text-sm text-gray-600">{{ __('client.route_show.details_modal.status') }}
+                                <span id="modal-availability" class="font-bold text-emerald-600"></span>
                             </p>
                         </div>
-                        <div class="pt-4 border-t">
-                            <a id="modal-booking-link" href="#"
-                               class="w-full text-center px-5 py-3 bg-yellow-400 text-gray-900 font-bold rounded-full hover:bg-yellow-500 transition block">{{ __('client.route_show.details_modal.book_now_button') }}
-                            </a>
-                        </div>
+                        <a id="modal-booking-link" href="#" class="btn-book w-full text-center">
+                            <i class="fa-solid fa-ticket"></i>
+                            {{ __('client.route_show.details_modal.book_now_button') }}
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 const body = document.body;
+
+                // Mobile Filter
                 const filterPanel = document.getElementById('filter-panel');
-                const filterBackdrop = document.getElementById('filter-backdrop');
+                const filterBackdrop = document.getElementById('mobile-filter-backdrop');
+                const filterToggle = document.getElementById('mobile-filter-toggle');
+                const filterClose = document.getElementById('mobile-filter-close');
 
                 function openFilters() {
                     if (!filterPanel) return;
-                    filterPanel.classList.remove('hidden');
-                    filterPanel.classList.add('mobile-filter-open');
-                    if (filterBackdrop) {
-                        filterBackdrop.classList.remove('hidden');
-                    }
+                    filterPanel.classList.add('open');
+                    filterBackdrop?.classList.remove('hidden');
                     body.classList.add('overflow-hidden');
                 }
 
                 function closeFilters() {
                     if (!filterPanel) return;
-                    filterPanel.classList.remove('mobile-filter-open');
-                    if (window.innerWidth < 1024) {
-                        filterPanel.classList.add('hidden');
-                    }
-                    if (filterBackdrop) {
-                        filterBackdrop.classList.add('hidden');
-                    }
+                    filterPanel.classList.remove('open');
+                    filterBackdrop?.classList.add('hidden');
                     body.classList.remove('overflow-hidden');
                 }
 
-                document.querySelectorAll('[data-filter-toggle]').forEach(function (button) {
-                    button.addEventListener('click', function () {
-                        openFilters();
-                    });
-                });
-
-                document.querySelectorAll('[data-filter-close]').forEach(function (button) {
-                    button.addEventListener('click', function () {
-                        closeFilters();
-                    });
-                });
-
-                if (filterBackdrop) {
-                    filterBackdrop.addEventListener('click', closeFilters);
-                }
+                filterToggle?.addEventListener('click', openFilters);
+                filterClose?.addEventListener('click', closeFilters);
+                filterBackdrop?.addEventListener('click', closeFilters);
 
                 window.addEventListener('resize', function () {
                     if (window.innerWidth >= 1024) {
                         body.classList.remove('overflow-hidden');
-                        if (filterBackdrop) {
-                            filterBackdrop.classList.add('hidden');
-                        }
-                        if (filterPanel) {
-                            filterPanel.classList.remove('mobile-filter-open');
-                        }
+                        filterBackdrop?.classList.add('hidden');
+                        filterPanel?.classList.remove('open');
                     }
                 });
 
+                // Image Trigger
                 document.querySelectorAll('[data-image-trigger]').forEach(function (button) {
                     button.addEventListener('click', function () {
                         const targetSelector = button.getAttribute('data-target');
@@ -913,12 +1116,15 @@
                         if (target && imageUrl) {
                             target.setAttribute('src', imageUrl);
                         }
+                        // Update active state
+                        button.closest('.gallery-thumbs')?.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+                        button.classList.add('active');
                     });
                 });
 
+                // Modal
                 const modal = document.getElementById('trip-details-modal');
                 const closeModalBtn = document.getElementById('close-modal-btn');
-                const seatMapContainer = document.getElementById('seat-map-container');
                 const modalCompanyName = document.getElementById('modal-company-name');
                 const modalBusName = document.getElementById('modal-bus-name');
                 const modalBusModel = document.getElementById('modal-bus-model');
@@ -932,26 +1138,19 @@
                 const modalBookingLink = document.getElementById('modal-booking-link');
 
                 function openModal() {
-                    modal.classList.remove('hidden');
+                    modal?.classList.remove('hidden');
                     body.classList.add('overflow-hidden');
                 }
 
                 function closeModal() {
-                    modal.classList.add('hidden');
+                    modal?.classList.add('hidden');
                     body.classList.remove('overflow-hidden');
                 }
 
-                if (closeModalBtn) {
-                    closeModalBtn.addEventListener('click', closeModal);
-                }
-
-                if (modal) {
-                    modal.addEventListener('click', function (event) {
-                        if (event.target === modal) {
-                            closeModal();
-                        }
-                    });
-                }
+                closeModalBtn?.addEventListener('click', closeModal);
+                modal?.addEventListener('click', function (event) {
+                    if (event.target === modal) closeModal();
+                });
 
                 document.querySelectorAll('.view-trip-details-btn').forEach(function (button) {
                     button.addEventListener('click', function () {
@@ -965,10 +1164,8 @@
                         modalBusModel.textContent = tripData.bus_model || '';
                         modalBusCategory.textContent = tripData.bus_category || "{{__('client.route_show.details_modal.not_updated')}}";
 
-                        const galleryImages = Array.isArray(tripData.image_gallery) ? tripData
-                            .image_gallery : [];
-                        let initialImage = tripData.primary_bus_image || galleryImages[0] || tripData
-                            .bus_thumbnail || '{{ $galleryFallback }}';
+                        const galleryImages = Array.isArray(tripData.image_gallery) ? tripData.image_gallery : [];
+                        let initialImage = tripData.primary_bus_image || galleryImages[0] || tripData.bus_thumbnail || '{{ $galleryFallback }}';
                         modalBusImage.src = initialImage;
 
                         modalGallery.innerHTML = '';
@@ -985,41 +1182,33 @@
                                 }
                                 thumbBtn.addEventListener('click', function () {
                                     modalBusImage.src = src;
-                                    if (activeThumb) {
-                                        activeThumb.classList.remove('is-active');
-                                    }
+                                    if (activeThumb) activeThumb.classList.remove('is-active');
                                     thumbBtn.classList.add('is-active');
                                     activeThumb = thumbBtn;
                                 });
                                 modalGallery.appendChild(thumbBtn);
-                                if (!activeThumb) {
-                                    thumbBtn.classList.add('is-active');
-                                    activeThumb = thumbBtn;
-                                }
                             });
                         } else {
-                            modalGallery.innerHTML =
-                                '<p class="text-sm text-gray-500">' + "{{__('client.route_show.details_modal.no_gallery')}}" + '</p>';
+                            modalGallery.innerHTML = '<p class="text-sm text-gray-500">' + "{{__('client.route_show.details_modal.no_gallery')}}" + '</p>';
                         }
 
                         modalServices.innerHTML = '';
                         if (tripData.services && tripData.services.length > 0) {
                             tripData.services.forEach(function (service) {
                                 const chip = document.createElement('span');
-                                chip.className =
-                                    'inline-flex items-center gap-2 px-3 py-1 text-sm font-semibold rounded-full bg-blue-50 text-blue-700';
-                                chip.innerHTML = '<i class="fa-solid fa-check"></i> ' + service;
+                                chip.className = 'service-chip';
+                                chip.innerHTML = '<i class="fa-solid fa-check-circle"></i> ' + service;
                                 modalServices.appendChild(chip);
                             });
                         } else {
-                            modalServices.innerHTML =
-                                '<p class="text-sm text-gray-500">' + "{{__('client.route_show.details_modal.no_services')}}" + '</p>';
+                            modalServices.innerHTML = '<p class="text-sm text-gray-500">' + "{{__('client.route_show.details_modal.no_services')}}" + '</p>';
                         }
 
                         modalPickupPoints.innerHTML = '';
                         if (tripData.pickup_points) {
                             tripData.pickup_points.forEach(function (point) {
                                 const item = document.createElement('li');
+                                item.className = 'point-item';
                                 item.textContent = point.name || '';
                                 modalPickupPoints.appendChild(item);
                             });
@@ -1029,6 +1218,7 @@
                         if (tripData.dropoff_points) {
                             tripData.dropoff_points.forEach(function (point) {
                                 const item = document.createElement('li');
+                                item.className = 'point-item';
                                 item.textContent = point.name || '';
                                 modalDropoffPoints.appendChild(item);
                             });
@@ -1037,12 +1227,7 @@
                         const seatsAvailable = Number(tripData.seats_available ?? 0);
                         modalAvailability.textContent = seatsAvailable > 0 ? "{{__('client.route_show.trip_card.seats_available')}}" : "{{__('client.route_show.trip_card.seats_full')}}";
 
-                        const bookedSeats = Array.isArray(tripData.booked_seats) ? tripData
-                            .booked_seats : [];
-                        generateSeatMap(tripData.seat_map, bookedSeats);
-
-                        const bookingUrl = new URL("{{ route('client.booking.create') }}", window
-                            .location.origin);
+                        const bookingUrl = new URL("{{ route('client.booking.create') }}", window.location.origin);
                         bookingUrl.searchParams.set('bus_route_id', tripData.bus_route_id);
                         bookingUrl.searchParams.set('date', '{{ $departureDate }}');
                         modalBookingLink.href = bookingUrl.toString();
@@ -1050,70 +1235,6 @@
                         openModal();
                     });
                 });
-
-                function generateSeatMap(seatMapData, bookedSeats = []) {
-                    seatMapContainer.innerHTML = '';
-                    if (!seatMapData) {
-                        seatMapContainer.innerHTML =
-                            '<p class="text-center text-gray-500">' + "{{__('client.route_show.details_modal.no_seat_map')}}" + '</p>';
-                        return;
-                    }
-
-                    try {
-                        const seatMap = typeof seatMapData === 'string' ? JSON.parse(seatMapData) : seatMapData;
-                        const booked = bookedSeats.map(function (seat) {
-                            return String(seat).toUpperCase();
-                        });
-
-                        if (seatMap.floors && seatMap.floors.length > 0) {
-                            seatMap.floors.forEach(function (floor) {
-                                const deckDiv = document.createElement('div');
-                                deckDiv.className = 'seat-deck';
-                                deckDiv.innerHTML = '<h5 class="seat-deck-title">' + (floor.label || "{{__('client.route_show.details_modal.deck')}}") + '</h5>';
-
-                                const rows = {};
-                                floor.seats.forEach(function (seat) {
-                            const rowKey = seat.row;
-                            if (!rows[rowKey]) {
-                                rows[rowKey] = [];
-                            }
-                            rows[rowKey].push(seat);
-                        });
-
-                        Object.keys(rows).sort().forEach(function (rowKey) {
-                            const rowDiv = document.createElement('div');
-                            rowDiv.className = 'seat-row';
-                            rows[rowKey].sort(function (a, b) {
-                                return a.col - b.col;
-                            }).forEach(function (seat) {
-                                const seatEl = document.createElement('div');
-                                if (seat.type === 'aisle') {
-                                    seatEl.className = 'seat-aisle';
-                                } else {
-                                    seatEl.className = 'seat';
-                                    seatEl.textContent = seat.code;
-                                    const seatCode = String(seat.code).toUpperCase();
-                                    if (booked.includes(seatCode)) {
-                                        seatEl.classList.add('booked');
-                                    } else if (seat.status === 'disabled') {
-                                        seatEl.classList.add('disabled');
-                                    } else {
-                                        seatEl.classList.add('available');
-                                    }
-                                }
-                                rowDiv.appendChild(seatEl);
-                            });
-                            deckDiv.appendChild(rowDiv);
-                        });
-
-                        seatMapContainer.appendChild(deckDiv);
-                    });
-                }
-            } catch (error) {
-                seatMapContainer.innerHTML =
-                    '<p class="text-center text-gray-500">' + "{{__('client.route_show.details_modal.seat_map_error')}}" + '</p>';
-            }
-                }
             });
         </script>
     @endpush

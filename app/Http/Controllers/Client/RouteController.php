@@ -14,6 +14,40 @@ use Illuminate\Support\Str;
 
 class RouteController extends Controller
 {
+    /**
+     * Resolve location name based on type and id.
+     */
+    private function resolveLocationName(string $type, int $id): ?string
+    {
+        return match ($type) {
+            'province' => DB::table('provinces')->where('id', $id)->value('name'),
+            'district' => DB::table('districts')->where('id', $id)->value('name'),
+            'stop' => DB::table('stops')->where('id', $id)->value('name'),
+            default => null,
+        };
+    }
+
+    /**
+     * Resolve location context (parent location info) based on type and id.
+     */
+    private function resolveLocationContext(string $type, int $id): ?string
+    {
+        return match ($type) {
+            'province' => __('client.search.types.province'),
+            'district' => DB::table('districts as d')
+                ->join('provinces as p', 'd.province_id', '=', 'p.id')
+                ->where('d.id', $id)
+                ->value('p.name'),
+            'stop' => DB::table('stops as s')
+                ->join('districts as d', 's.district_id', '=', 'd.id')
+                ->join('provinces as p', 'd.province_id', '=', 'p.id')
+                ->where('s.id', $id)
+                ->selectRaw("CONCAT(d.name, ' · ', p.name) as context")
+                ->value('context'),
+            default => null,
+        };
+    }
+
     public function index(Request $request)
     {
         $searchDefaults = [
@@ -195,38 +229,44 @@ class RouteController extends Controller
         ];
 
         if ($request->has('origin_id')) {
-            $originName = 'Unknown';
-            if ($request->input('origin_type') == 'province') {
-                $originName = DB::table('provinces')->where('id', $request->input('origin_id'))->value('name');
-            }
+            $originType = $request->input('origin_type', 'province');
+            $originId = (int) $request->input('origin_id');
+            $originName = $this->resolveLocationName($originType, $originId) ?? $route->start_province_name;
+            $originContext = $this->resolveLocationContext($originType, $originId);
+
             $searchDefaults['origin'] = [
-                'id' => $request->input('origin_id'),
-                'type' => $request->input('origin_type'),
-                'name' => $originName ?? $route->start_province_name
+                'id' => $originId,
+                'type' => $originType,
+                'name' => $originName,
+                'context' => $originContext,
             ];
         } else {
             $searchDefaults['origin'] = [
                 'id' => $route->province_start_id,
                 'type' => 'province',
-                'name' => $route->start_province_name
+                'name' => $route->start_province_name,
+                'context' => __('client.search.types.province'),
             ];
         }
 
         if ($request->has('destination_id')) {
-            $destName = 'Unknown';
-            if ($request->input('destination_type') == 'province') {
-                $destName = DB::table('provinces')->where('id', $request->input('destination_id'))->value('name');
-            }
+            $destType = $request->input('destination_type', 'province');
+            $destId = (int) $request->input('destination_id');
+            $destName = $this->resolveLocationName($destType, $destId) ?? $route->end_province_name;
+            $destContext = $this->resolveLocationContext($destType, $destId);
+
             $searchDefaults['destination'] = [
-                'id' => $request->input('destination_id'),
-                'type' => $request->input('destination_type'),
-                'name' => $destName ?? $route->end_province_name
+                'id' => $destId,
+                'type' => $destType,
+                'name' => $destName,
+                'context' => $destContext,
             ];
         } else {
             $searchDefaults['destination'] = [
                 'id' => $route->province_end_id,
                 'type' => 'province',
-                'name' => $route->end_province_name
+                'name' => $route->end_province_name,
+                'context' => __('client.search.types.province'),
             ];
         }
 

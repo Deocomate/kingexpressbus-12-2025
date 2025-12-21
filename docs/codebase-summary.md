@@ -1,68 +1,46 @@
 # Codebase Summary
 
-This document provides a high-level summary of the project's codebase, based on an analysis of its structure and key components.
+## 1. Architecture Overview
+The project follows the standard **Laravel 11/12** MVC architecture. It is a monolithic application serving three distinct user panels (Admin, Company, Client) via server-side rendering (Blade templates implied, though API structure is also present but currently commented out).
 
-## Core Architecture
+## 2. Directory Structure
 
-The application is built on the **Laravel framework** and follows the **Model-View-Controller (MVC)** architectural pattern. This ensures a clear separation of concerns between business logic (Model), presentation (View), and user input (Controller).
+### `app/`
+-   **Http/Controllers:** Organized by functional modules:
+    -   `Admin/`: Controllers for platform administration (RouteController, CompanyController, etc.).
+    -   `Company/`: Controllers for bus operator operations (BusController, BusRouteController).
+    -   `Client/`: Controllers for the public facing website (HomeController, BookingController).
+    -   `Auth/`: Authentication logic (Login, Register, Logout).
+    -   `System/`: Utility controllers (e.g., CkFinderController).
+-   **Http/Middleware:** Custom middleware for role-based access:
+    -   `Roles/AdminAuthMiddleware`
+    -   `Roles/CompanyAuthMiddleware`
+    -   `Roles/CustomerAuthMiddleware`
+-   **Models:** Eloquent models representing the database entities (User, Bus, Route, Booking, etc.).
 
--   **Models (`app/Models`)**: Represent the data structure and business logic, interacting with the database through Laravel's Eloquent ORM.
--   **Views (`resources/views`)**: Contain the presentation layer, built with Blade templates. They are organized by user role (Admin, Client, Company) and leverage reusable components.
--   **Controllers (`app/Http/Controllers`)**: Handle user requests, retrieve data from Models, and pass it to the Views. Controllers are organized by user roles to manage different access levels and functionalities.
+### `routes/`
+-   **`web.php`:** Main entry point for all application routes.
+    -   **Prefix `admin.`**: Protected by Admin middleware.
+    -   **Prefix `company.`**: Protected by Company middleware.
+    -   **Prefix `client.`**: Public and Customer middleware routes.
+-   **`api.php`**: Currently commented out/placeholder.
 
-## Directory Structure Overview
+### `database/`
+-   **Migrations:** robust schema definition handling relational integrity (Foreign Keys with Cascades).
 
-```
-/
-├── app/
-│   ├── Http/Controllers/   # Role-based controllers (Admin, Client, Company)
-│   ├── Models/             # Eloquent ORM models
-│   └── ...                 # Other core application logic
-├── config/                 # Application configuration files (e.g., database, services)
-├── database/
-│   ├── migrations/         # Database schema definitions
-│   └── seeders/            # Database seeders
-├── public/                 # Publicly accessible assets (CSS, JS, images)
-├── resources/
-│   ├── views/              # Blade templates, organized by role
-│   └── lang/               # Language files for localization
-├── routes/
-│   └── web.php             # Route definitions, grouped by user role
-└── tests/
-    └── Pest                # Test suite (currently minimal)
-```
+## 3. Key Functionalities & Logic
 
-## Key Components & Features
+### Authentication
+-   The system uses Laravel's built-in Auth mechanisms but separates sessions/guards for different user types (likely configured in `config/auth.php` - *to be verified*).
 
-### 1. Routing and Middleware (`routes/web.php`)
+### Content Management
+-   **CKFinder Integration:** The project includes CKFinder for handling file uploads (images for buses, routes), integrated via `CkFinderController`.
 
--   Routes are organized by user roles: **Admin**, **Client**, and **Company**.
--   **Middleware** is used to handle authentication and authorization, ensuring that users can only access routes appropriate for their role.
+### Localization
+-   Route `/locale/{locale}` handles session-based language switching ('en', 'vi').
 
-### 2. Database (`database/`)
-
--   The database schema is defined and version-controlled through **migrations**.
--   Key tables include `users`, `routes`, `companies`, `buses`, and `bookings`, which form the core of the booking system.
-
-### 3. Frontend (`resources/`)
-
--   The user interface is built using **Blade**, Laravel's templating engine.
--   Templates are organized by user roles, allowing for distinct interfaces for admins, companies, and clients.
--   **Reusable components** are used to maintain consistency and reduce code duplication.
-
-### 4. File Management
-
--   **CKFinder** is integrated for file and media management, providing a user-friendly interface for uploading and organizing files.
-
-### 5. Testing (`tests/`)
-
--   The project is set up for testing with **Pest**, a popular testing framework for PHP.
--   The current test coverage is minimal and should be expanded to ensure code quality and stability.
-
-## Summary of Analysis
-
--   The codebase adheres to standard Laravel and MVC conventions, making it maintainable and scalable.
--   Role-based access control is a central part of the application's architecture.
--   The frontend is modular and well-organized.
--   The database schema is clearly defined through migrations.
--   While the testing framework is in place, the test suite needs to be built out.
+## 4. Dependencies
+-   `laravel/framework`: ^12.0 (Bleeding edge/Latest)
+-   `ckfinder/ckfinder-laravel-package`: ^5.0 (File management)
+-   `resend/resend-php`: Email service integration.
+-   `laravel/sanctum`: API token management (installed but API routes are currently inactive).
