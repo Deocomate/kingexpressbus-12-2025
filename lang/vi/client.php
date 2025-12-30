@@ -25,6 +25,7 @@ return [
     'layout' => [
         'profile' => 'Trang cá nhân',
         'my_bookings' => 'Đặt vé của tôi',
+        'warning_holiday_ticket' => 'Lưu ý không đảm bảo giữ vé trước các dịp nghỉ lễ, tết nếu chưa thanh toán',
     ],
     'common' => [
         'contact_price' => 'Liên hệ',

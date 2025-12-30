@@ -25,6 +25,7 @@ return [
     'layout' => [
         'profile' => 'My profile',
         'my_bookings' => 'My bookings',
+        'warning_holiday_ticket' => 'Note: Ticket reservation is not guaranteed before holidays/Tet if not paid.',
     ],
     'common' => [
         'contact_price' => 'Contact',
